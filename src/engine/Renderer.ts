@@ -526,7 +526,7 @@ export class Renderer {
       }
 
       // Check and render South-East skirt
-      const seKey = `${gx + 1},${gy}_se`;
+      const seKey = `${gx},${gy}_se`;
       const seType = this.map.data.skirts[seKey];
       if (seType) {
         const seImg = this.images.get(seType) || this.images.get(`${this.map.data.theme}_skirt_se`);

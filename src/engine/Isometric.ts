@@ -82,53 +82,70 @@ export function isPointInTile(sx: number, sy: number, gx: number, gy: number): b
  * - Right (+X): 'E'
  * - Down-Right (+X, +Y): 'SE'
  */
+/**
+ * Determines the closest 8-way direction from movement vector (dx, dy),
+ * calibrated to 2:1 isometric geometry where diagonal platform edges have slope ±0.5 (26.565°).
+ */
 export function vectorToDirection(dx: number, dy: number): Direction {
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
     return 'S';
   }
 
-  // Calculate angle in radians from -PI to +PI, with 0 pointing Right (+X), PI/2 pointing Down (+Y)
   const angle = Math.atan2(dy, dx);
-  // Convert to degrees [0, 360)
   let deg = (angle * 180) / Math.PI;
   if (deg < 0) deg += 360;
 
-  // 8 sectors of 45 degrees each, centered around cardinal/diagonal directions:
-  // E:   0 deg    (337.5 - 22.5)
-  // SE:  45 deg   (22.5 - 67.5)
-  // S:   90 deg   (67.5 - 112.5)
-  // SW: 135 deg   (112.5 - 157.5)
-  // W:  180 deg   (157.5 - 202.5)
-  // NW: 225 deg   (202.5 - 247.5)
-  // N:  270 deg   (247.5 - 292.5)
-  // NE: 315 deg   (292.5 - 337.5)
-
-  if (deg >= 337.5 || deg < 22.5) return 'E';
-  if (deg >= 22.5 && deg < 67.5) return 'SE';
-  if (deg >= 67.5 && deg < 112.5) return 'S';
-  if (deg >= 112.5 && deg < 157.5) return 'SW';
-  if (deg >= 157.5 && deg < 202.5) return 'W';
-  if (deg >= 202.5 && deg < 247.5) return 'NW';
-  if (deg >= 247.5 && deg < 292.5) return 'N';
+  // Midpoint sectors calibrated to 2:1 isometric diagonals (26.57°, 153.43°, 206.57°, 333.43°)
+  // and cardinal directions (0°, 90°, 180°, 270°):
+  if (deg >= 346.72 || deg < 13.28) return 'E';
+  if (deg >= 13.28 && deg < 58.28) return 'SE';
+  if (deg >= 58.28 && deg < 121.72) return 'S';
+  if (deg >= 121.72 && deg < 166.72) return 'SW';
+  if (deg >= 166.72 && deg < 193.28) return 'W';
+  if (deg >= 193.28 && deg < 238.28) return 'NW';
+  if (deg >= 238.28 && deg < 301.72) return 'N';
   return 'NE';
 }
 
 /**
- * Returns direction vector in screen coordinates for keyboard input
+ * Returns direction vector in screen coordinates for keyboard input.
+ * Diagonals are strictly parallel with the 2:1 isometric map orientation (ratio 2:1).
  */
 export function inputToVector(up: boolean, down: boolean, left: boolean, right: boolean): Point2D {
   let dx = 0;
   let dy = 0;
 
-  if (up) dy -= 1;
-  if (down) dy += 1;
-  if (left) dx -= 1;
-  if (right) dx += 1;
+  const isUp = up && !down;
+  const isDown = down && !up;
+  const isLeft = left && !right;
+  const isRight = right && !left;
 
-  if (dx !== 0 && dy !== 0) {
-    const len = Math.SQRT2;
-    dx /= len;
-    dy /= len;
+  if (isUp && isRight) {
+    // North-East (parallel to NE platform edges): dx = +2, dy = -1
+    const invLen = 1 / Math.hypot(2, -1);
+    dx = 2 * invLen;
+    dy = -1 * invLen;
+  } else if (isDown && isRight) {
+    // South-East (parallel to SE platform edges): dx = +2, dy = +1
+    const invLen = 1 / Math.hypot(2, 1);
+    dx = 2 * invLen;
+    dy = 1 * invLen;
+  } else if (isDown && isLeft) {
+    // South-West (parallel to SW platform edges): dx = -2, dy = +1
+    const invLen = 1 / Math.hypot(-2, 1);
+    dx = -2 * invLen;
+    dy = 1 * invLen;
+  } else if (isUp && isLeft) {
+    // North-West (parallel to NW platform edges): dx = -2, dy = -1
+    const invLen = 1 / Math.hypot(-2, -1);
+    dx = -2 * invLen;
+    dy = -1 * invLen;
+  } else {
+    // Cardinal movement
+    if (isUp) dy = -1;
+    if (isDown) dy = 1;
+    if (isLeft) dx = -1;
+    if (isRight) dx = 1;
   }
 
   return { x: dx, y: dy };

@@ -801,11 +801,12 @@ dialog.mmbn-dialog::backdrop {
 }
 
 .palette-item img {
-  max-width: 48px;
-  max-height: 36px;
+  max-width: 52px;
+  max-height: 26px;
   object-fit: contain;
   margin-bottom: 6px;
   image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
 .palette-item span {
@@ -815,16 +816,19 @@ dialog.mmbn-dialog::backdrop {
 }
 
 .prefab-preview-box {
-  width: 42px;
-  height: 28px;
-  background: #08142a;
-  border: 1px dashed var(--color-cyber-cyan);
+  width: 50px;
+  height: 25px;
+  background: rgba(0, 240, 208, 0.15);
+  border: 1px solid var(--color-cyber-cyan);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  color: var(--color-cyber-cyan);
+  font-size: 8px;
+  font-weight: bold;
+  color: var(--color-cyber-yellow);
   margin-bottom: 6px;
+  box-shadow: 0 0 6px rgba(0, 240, 208, 0.3);
 }
 
 /* 3. Prop Inspector Modal */

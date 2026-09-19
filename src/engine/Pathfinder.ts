@@ -97,16 +97,16 @@ export class Pathfinder {
 
     const key = (x: number, y: number) => `${Math.round(x / this.stepSize)}_${Math.round(y / this.stepSize)}`;
 
-    // 8 movement directions
+    // 8 movement directions: 4 cardinal + 4 2:1 isometric diagonals parallel to map edges
     const neighborDirs = [
       { dx: 1, dy: 0 },
       { dx: -1, dy: 0 },
       { dx: 0, dy: 1 },
       { dx: 0, dy: -1 },
-      { dx: 1, dy: 1 },
-      { dx: -1, dy: 1 },
-      { dx: 1, dy: -1 },
-      { dx: -1, dy: -1 }
+      { dx: 2, dy: 1 },  // SE (parallel to map edge)
+      { dx: -2, dy: 1 }, // SW (parallel to map edge)
+      { dx: 2, dy: -1 }, // NE (parallel to map edge)
+      { dx: -2, dy: -1 } // NW (parallel to map edge)
     ];
 
     let closestNode: PathNode = startNode;

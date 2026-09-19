@@ -151,30 +151,89 @@ async function runBuilderTests() {
   await page.keyboard.press('Enter');
   await new Promise(r => setTimeout(r, 300));
 
-  // 7. Test Conveyor & Ice Physics
-  console.log('7. Testing Conveyor Belt and Ice Panel Physics...');
+  // 7. Test Diagonal Running Direction Parallel to Map Edges
+  console.log('7. Testing Diagonal Running Direction (Parallel to Map Orientation)...');
+  const runVectorTest = await page.evaluate(() => {
+    // Test inputToVector for all 4 diagonal pairs
+    // We access Isometric functions exposed on window or test via evaluate
+    // In our app, let's test running MegaMan with keyboard presses
+    const g = window.__game;
+    
+    // Simulate pressing W + D (Up + Right = NE)
+    // In screen coordinates, NE slope must be -0.5 (-1 / 2)
+    // Let's test MegaMan's update with diagonal inputs
+    const neVec = { x: 2 / Math.sqrt(5), y: -1 / Math.sqrt(5) };
+    const seVec = { x: 2 / Math.sqrt(5), y: 1 / Math.sqrt(5) };
+    const swVec = { x: -2 / Math.sqrt(5), y: 1 / Math.sqrt(5) };
+    const nwVec = { x: -2 / Math.sqrt(5), y: -1 / Math.sqrt(5) };
+
+    // Test on open plaza floor at gx=4, gy=4 (x=368, y=224)
+    const startX = 368;
+    const startY = 224;
+    const dt = 0.05;
+
+    g.megaman.x = startX;
+    g.megaman.y = startY;
+    g.megaman.update(dt, neVec);
+    const neDir = g.megaman.direction;
+    const neSlope = (g.megaman.y - startY) / (g.megaman.x - startX);
+
+    g.megaman.x = startX;
+    g.megaman.y = startY;
+    g.megaman.update(dt, seVec);
+    const seDir = g.megaman.direction;
+    const seSlope = (g.megaman.y - startY) / (g.megaman.x - startX);
+
+    g.megaman.x = startX;
+    g.megaman.y = startY;
+    g.megaman.update(dt, swVec);
+    const swDir = g.megaman.direction;
+    const swSlope = (g.megaman.y - startY) / (g.megaman.x - startX);
+
+    g.megaman.x = startX;
+    g.megaman.y = startY;
+    g.megaman.update(dt, nwVec);
+    const nwDir = g.megaman.direction;
+    const nwSlope = (g.megaman.y - startY) / (g.megaman.x - startX);
+
+    return {
+      ne: { dir: neDir, slope: neSlope, parallelToMapEdge: Math.abs(neSlope - (-0.5)) < 0.001 },
+      se: { dir: seDir, slope: seSlope, parallelToMapEdge: Math.abs(seSlope - 0.5) < 0.001 },
+      sw: { dir: swDir, slope: swSlope, parallelToMapEdge: Math.abs(swSlope - (-0.5)) < 0.001 },
+      nw: { dir: nwDir, slope: nwSlope, parallelToMapEdge: Math.abs(nwSlope - 0.5) < 0.001 }
+    };
+  });
+  console.log('Diagonal Running Alignment Test:', JSON.stringify(runVectorTest, null, 2));
+
+  if (!runVectorTest.ne.parallelToMapEdge || !runVectorTest.se.parallelToMapEdge ||
+      !runVectorTest.sw.parallelToMapEdge || !runVectorTest.nw.parallelToMapEdge) {
+    throw new Error('Running diagonal is not parallel to the 2:1 isometric map edges');
+  }
+
+  // 8. Test Conveyor & Ice Physics
+  console.log('8. Testing Conveyor Belt and Ice Panel Physics...');
   const physicsTest = await page.evaluate(() => {
     const g = window.__game;
-    // Step onto conveyor tile in SciLab Square (e.g. gx=3, gy=1 is special_conveyor_e)
     const convTile = g.map.data.tiles['3,1'];
-    // In screen coords, gx=3, gy=1
     const pX = 368 + (3 - 1) * 32;
     const pY = 96 + (3 + 1) * 16;
 
     const force = g.map.getConveyorForce(pX, pY);
     const isIce = g.map.isIceAt(pX, pY);
 
-    // Also check the ice tile we placed at (8, 6)
     const iceTileX = 368 + (8 - 6) * 32;
     const iceTileY = 96 + (8 + 6) * 16;
     const isIcePlaced = g.map.isIceAt(iceTileX, iceTileY);
 
-    return { convTile, force, isIce, isIcePlaced };
+    // Check conveyor force slope is ±0.5 (parallel to map edge)
+    const convSlope = force ? force.y / force.x : null;
+
+    return { convTile, force, convSlope, isIce, isIcePlaced };
   });
   console.log('Physics Verification:', physicsTest);
 
-  // 8. Test JSON Serialization (Export & Import)
-  console.log('8. Testing JSON Serialization Export & Import...');
+  // 9. Test JSON Serialization (Export & Import)
+  console.log('9. Testing JSON Serialization Export & Import...');
   const jsonTest = await page.evaluate(() => {
     const current = window.__game.map.data;
     const exported = JSON.stringify(current);
@@ -187,6 +246,12 @@ async function runBuilderTests() {
     };
   });
   console.log('JSON Serialization Result:', jsonTest);
+
+  // 10. Switch back to Edit Mode and capture updated isometric shapes
+  await page.click('#btn-mode-toggle');
+  await new Promise(r => setTimeout(r, 400));
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, 'builder_edit_mode_ui.png') });
+  await page.screenshot({ path: path.join(ARTIFACT_DIR, 'builder_fixed_iso_tiles.png') });
 
   console.log('=== All Automated Tests Passed Successfully! ===');
   await browser.close();

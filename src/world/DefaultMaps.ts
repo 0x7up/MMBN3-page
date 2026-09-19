@@ -27,7 +27,7 @@ export function generateSkirtsForTiles(
     // South-East edge (+gx neighbor)
     const seNeighbor = `${gx + 1},${gy}`;
     if (!tiles[seNeighbor]) {
-      skirts[`${gx + 1},${gy}_se`] = seType;
+      skirts[`${gx},${gy}_se`] = seType;
     }
   }
 

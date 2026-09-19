@@ -142,10 +142,19 @@ export class CustomMap {
     if (!tile) return null;
 
     const speed = 120;
-    if (tile === 'special_conveyor_e') return { x: speed, y: 0 };
-    if (tile === 'special_conveyor_w') return { x: -speed, y: 0 };
-    if (tile === 'special_conveyor_s') return { x: 0, y: speed };
-    if (tile === 'special_conveyor_n') return { x: 0, y: -speed };
+    const invSqrt5 = 1 / Math.sqrt(5);
+    const speedX = speed * 2 * invSqrt5;
+    const speedY = speed * 1 * invSqrt5;
+
+    // Parallel to isometric diagonals:
+    // conveyor_e: Down-Right (SE along +gx)
+    if (tile === 'special_conveyor_e') return { x: speedX, y: speedY };
+    // conveyor_w: Up-Left (NW along -gx)
+    if (tile === 'special_conveyor_w') return { x: -speedX, y: -speedY };
+    // conveyor_s: Down-Left (SW along +gy)
+    if (tile === 'special_conveyor_s') return { x: -speedX, y: speedY };
+    // conveyor_n: Up-Right (NE along -gy)
+    if (tile === 'special_conveyor_n') return { x: speedX, y: -speedY };
 
     return null;
   }
