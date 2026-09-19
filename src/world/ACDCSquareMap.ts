@@ -24,22 +24,17 @@ export class ACDCSquareMap {
    * Checks if a screen pixel position (sx, sy) is on a valid walkable platform
    */
   public isWalkable(sx: number, sy: number): boolean {
-    // Barrier 1: Shop counter and shopkeeper Navis (purple girl Navi & green merchant Navi)
+    // The ONLY invisible barrier is around the shop (shop counter & the 2 shopkeeper Navis)
     if (sx >= 135 && sx <= 245 && sy >= 150 && sy <= 235) {
-      return false;
-    }
-
-    // Barrier 2: Floating warp beacon machine on lower platform
-    if (sx >= 70 && sx <= 135 && sy >= 235 && sy <= 290) {
       return false;
     }
 
     // 1. Check Main Square (7x7 isometric grid)
     const { gx, gy } = screenToWorld(sx, sy);
-    const inMainSquare = gx >= 0.0 && gx <= 6.0 && gy >= 0.0 && gy <= 6.0;
+    const inMainSquare = gx >= -0.2 && gx <= 6.2 && gy >= -0.2 && gy <= 6.2;
 
     if (inMainSquare) {
-      // Barrier for shop area in grid coordinates
+      // Invisible barrier for shop in grid coordinates
       if (gx <= 2.2 && gy >= 3.2) {
         return false;
       }
@@ -47,40 +42,31 @@ export class ACDCSquareMap {
     }
 
     // 2. Check Upper Bridge (between main platform and BBS platform)
-    // Connects (480, 160) to (550, 125), slope -0.5
-    if (sx >= 475 && sx <= 550 && sy >= 115 && sy <= 175) {
-      const bridgeCenterY = 160 - (sx - 480) * 0.5;
-      if (Math.abs(sy - bridgeCenterY) <= 12) {
+    if (sx >= 460 && sx <= 560 && sy >= 110 && sy <= 185) {
+      const bridgeCenterY = 155 - (sx - 480) * 0.45;
+      if (Math.abs(sy - bridgeCenterY) <= 22) {
         return true;
       }
     }
 
-    // 3. Check Upper BBS Platform
-    // 2x3 platform extending from sx=525 to sx=680, sy=84 to sy=155
-    if (sx >= 525 && sx <= 680 && sy >= 84 && sy <= 155) {
-      // Diamond boundary check around platform center (605, 120)
-      const dx = Math.abs(sx - 605);
-      const dy = Math.abs(sy - 120);
-      if (dx / 75 + dy / 36 <= 1.05) {
-        return true;
-      }
+    // 3. Check Upper BBS Platform (open exploration, no barrier)
+    if (sx >= 520 && sx <= 688 && sy >= 35 && sy <= 155) {
+      return true;
     }
 
     // 4. Check Lower Bridge (between main platform and Warp platform)
-    // Connects (240, 255) to (170, 290), slope -0.5
-    if (sx >= 170 && sx <= 245 && sy >= 245 && sy <= 300) {
-      const bridgeCenterY = 255 + (240 - sx) * 0.5;
-      if (Math.abs(sy - bridgeCenterY) <= 12) {
+    if (sx >= 160 && sx <= 255 && sy >= 235 && sy <= 310) {
+      const bridgeCenterY = 255 + (240 - sx) * 0.45;
+      if (Math.abs(sy - bridgeCenterY) <= 22) {
         return true;
       }
     }
 
-    // 5. Check Lower Warp Platform
-    // Platform diamond centered at (95, 330)
-    if (sx >= 25 && sx <= 170 && sy >= 290 && sy <= 375) {
+    // 5. Check Lower Warp Platform (open exploration, no barrier)
+    if (sx >= 15 && sx <= 190 && sy >= 265 && sy <= 395) {
       const dx = Math.abs(sx - 95);
       const dy = Math.abs(sy - 330);
-      if (dx / 70 + dy / 36 <= 1.0) {
+      if (dx / 78 + dy / 45 <= 1.15) {
         return true;
       }
     }
