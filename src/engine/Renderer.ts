@@ -289,11 +289,11 @@ export class Renderer {
     ctx.fillRect(0, 0, w, h);
 
     if (this.bgPattern) {
-      // Continuous diagonal parallax scroll
-      ctx.translate(
-        (this.cyberStreamOffset * 1.5) % 240,
-        (this.cyberStreamOffset * 0.75) % 160
-      );
+      // Continuous diagonal stream with subtle distant parallax
+      const parallaxFactor = 0.2;
+      const bgX = (((this.cyberStreamOffset * 1.5 - this.camera.x * parallaxFactor) % 240) + 240) % 240;
+      const bgY = (((this.cyberStreamOffset * 0.75 - this.camera.y * parallaxFactor) % 160) + 160) % 160;
+      ctx.translate(bgX, bgY);
       ctx.fillStyle = this.bgPattern;
       ctx.fillRect(-240, -160, w + 480, h + 320);
     }

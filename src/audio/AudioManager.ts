@@ -16,14 +16,20 @@ interface BGMData {
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private sfxGain: GainNode | null = null;
   private bgmGain: GainNode | null = null;
+  private noiseBuffer: AudioBuffer | null = null;
 
   private isMuted: boolean = false;
   private bgmData: BGMData | null = null;
   private isBgmPlaying: boolean = false;
   private bgmStartTime: number = 0;
   private bgmTimerId: number | null = null;
+
+  // Monotonic note scheduler cursor to guarantee zero note duplication
+  private nextNoteIndex: number = 0;
+  private currentLoopCount: number = 0;
 
   private lastStepTime: number = 0;
 
@@ -42,23 +48,67 @@ export class AudioManager {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     this.ctx = new AudioContextClass();
 
+    // Master bus
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.45, this.ctx.currentTime);
     this.masterGain.connect(this.ctx.destination);
 
+    // Dynamics compressor to prevent digital clipping and audio distortion
+    this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.setValueAtTime(-14, this.ctx.currentTime);
+    this.compressor.knee.setValueAtTime(8, this.ctx.currentTime);
+    this.compressor.ratio.setValueAtTime(8, this.ctx.currentTime);
+    this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+    this.compressor.release.setValueAtTime(0.12, this.ctx.currentTime);
+    this.compressor.connect(this.masterGain);
+
+    // BGM bus routed through compressor
     this.bgmGain = this.ctx.createGain();
     this.bgmGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
-    this.bgmGain.connect(this.masterGain);
+    this.bgmGain.connect(this.compressor);
 
+    // SFX bus routed directly to master
     this.sfxGain = this.ctx.createGain();
     this.sfxGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
     this.sfxGain.connect(this.masterGain);
 
-    // Load BGM notes
+    // Pre-generate white noise buffer for authentic GBA percussion (snare, hi-hats)
+    const noiseLength = Math.floor(this.ctx.sampleRate * 1.5);
+    this.noiseBuffer = this.ctx.createBuffer(1, noiseLength, this.ctx.sampleRate);
+    const noiseData = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseLength; i++) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
+
+    // Load BGM notes and filter duplicate channels
     try {
       const resp = await fetch('/assets/bgm_notes.json');
       if (resp.ok) {
-        this.bgmData = await resp.json();
+        const raw = await resp.json();
+        // Channels in original MIDI:
+        // 0: Bass, 1: Lead, 2: Arp, 3: Accent, 9: Drums, 10: Chords
+        // Channels 4, 5, 6, 11-15 are identical DAW stereo/chorus clone tracks
+        const allowedChannels = new Set([0, 1, 2, 3, 9, 10]);
+        const sorted = (raw.notes as NoteEvent[])
+          .filter((n) => allowedChannels.has(n.c))
+          .sort((a, b) => a.t - b.t);
+
+        // Deduplicate simultaneous identical pitches
+        const cleanNotes: NoteEvent[] = [];
+        const seen = new Set<string>();
+        for (const n of sorted) {
+          const timeSlot = Math.round(n.t * 100);
+          const key = `${n.c}_${n.n}_${timeSlot}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            cleanNotes.push(n);
+          }
+        }
+
+        this.bgmData = {
+          duration: raw.duration,
+          notes: cleanNotes
+        };
         this.startBgmLoop();
       }
     } catch (e) {
@@ -85,68 +135,166 @@ export class AudioManager {
     if (!this.ctx || !this.bgmData || this.isBgmPlaying) return;
     this.isBgmPlaying = true;
     this.bgmStartTime = this.ctx.currentTime + 0.1;
+    this.nextNoteIndex = 0;
+    this.currentLoopCount = 0;
     this.scheduleNotes();
   }
 
   private scheduleNotes(): void {
     if (!this.ctx || !this.bgmData || !this.isBgmPlaying || !this.bgmGain) return;
 
-    const scheduleWindow = 4.0; // schedule ahead 4 seconds
-    const currentLoopTime = (this.ctx.currentTime - this.bgmStartTime) % this.bgmData.duration;
-    const windowEnd = currentLoopTime + scheduleWindow;
+    // Lookahead of 1.5s with frequent 250ms ticks
+    const lookahead = 1.5;
+    const scheduleUntil = this.ctx.currentTime + lookahead;
 
-    // Filter notes that fall within current window
-    for (const note of this.bgmData.notes) {
-      if (note.t >= currentLoopTime && note.t < windowEnd) {
-        this.playMidiNote(note, this.bgmStartTime + Math.floor((this.ctx.currentTime - this.bgmStartTime) / this.bgmData.duration) * this.bgmData.duration);
+    while (this.isBgmPlaying) {
+      if (this.nextNoteIndex < this.bgmData.notes.length) {
+        const note = this.bgmData.notes[this.nextNoteIndex];
+        const noteStartTime = this.bgmStartTime + this.currentLoopCount * this.bgmData.duration + note.t;
+
+        if (noteStartTime <= scheduleUntil) {
+          this.playMidiNote(note, noteStartTime);
+          this.nextNoteIndex++;
+        } else {
+          break;
+        }
+      } else {
+        // Current loop finished, advance to next loop if within window
+        const nextLoopStartTime = this.bgmStartTime + (this.currentLoopCount + 1) * this.bgmData.duration;
+        if (nextLoopStartTime <= scheduleUntil) {
+          this.currentLoopCount++;
+          this.nextNoteIndex = 0;
+        } else {
+          break;
+        }
       }
     }
 
-    this.bgmTimerId = window.setTimeout(() => this.scheduleNotes(), 2000);
+    this.bgmTimerId = window.setTimeout(() => this.scheduleNotes(), 250);
   }
 
   private midiToFreq(midi: number): number {
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
-  private playMidiNote(note: NoteEvent, loopBaseTime: number): void {
+  private playMidiNote(note: NoteEvent, startTime: number): void {
     if (!this.ctx || !this.bgmGain) return;
-
-    const startTime = loopBaseTime + note.t;
     if (startTime < this.ctx.currentTime - 0.05) return;
+
+    // 1. Drum / Percussion Channel (GBA Channel 4 / Noise & DirectSound)
+    if (note.c === 9) {
+      this.playPercussionNote(note, startTime);
+      return;
+    }
 
     const freq = this.midiToFreq(note.n);
     const osc = this.ctx.createOscillator();
     const noteGain = this.ctx.createGain();
 
-    // Select waveform based on channel to replicate GBA sound channels:
-    // Channel 0/1: Lead Pulse/Square
-    // Channel 2: Bass Triangle
-    // Channel 9: Percussion Noise/Square
-    if (note.c === 2 || note.n < 45) {
+    // 2. Chiptune Channel Timbre assignment
+    let peakGain = 0.08;
+    if (note.c === 0) {
+      // Bass: GBA Channel 3 programmable wave (warm triangle)
       osc.type = 'triangle';
-    } else if (note.c === 9) {
+      peakGain = Math.min(0.12, note.v * 0.12);
+    } else if (note.c === 1) {
+      // Lead melody: GBA Channel 1 pulse/square
       osc.type = 'square';
+      peakGain = Math.min(0.08, note.v * 0.08);
+    } else if (note.c === 2 || note.c === 3) {
+      // Arpeggio & Accents: GBA Channel 2 pulse/square
+      osc.type = 'square';
+      peakGain = Math.min(0.06, note.v * 0.06);
+    } else if (note.c === 10) {
+      // Pad chords: Soft triangle with lowpass filter
+      osc.type = 'triangle';
+      peakGain = Math.min(0.035, note.v * 0.035);
     } else {
       osc.type = 'square';
+      peakGain = Math.min(0.05, note.v * 0.05);
     }
 
     osc.frequency.setValueAtTime(freq, startTime);
 
-    // GBA envelope: quick attack, sustained release
-    const peakGain = Math.min(0.25, note.v * 0.2);
+    // GBA envelope
+    const attackTime = note.c === 10 ? 0.04 : 0.01;
+    const dur = Math.max(0.04, note.d);
+
     noteGain.gain.setValueAtTime(0.0001, startTime);
-    noteGain.gain.linearRampToValueAtTime(peakGain, startTime + 0.015);
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + Math.max(0.04, note.d));
+    noteGain.gain.linearRampToValueAtTime(peakGain, startTime + attackTime);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
 
     osc.connect(noteGain);
     noteGain.connect(this.bgmGain);
 
     try {
       osc.start(startTime);
-      osc.stop(startTime + note.d + 0.05);
+      osc.stop(startTime + dur + 0.02);
     } catch {
-      // Ignored if scheduled in past
+      // Past time safe
+    }
+  }
+
+  private playPercussionNote(note: NoteEvent, startTime: number): void {
+    if (!this.ctx || !this.bgmGain) return;
+
+    if (note.n === 35 || note.n === 36) {
+      // Kick: frequency drop sine/triangle
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(130, startTime);
+      osc.frequency.exponentialRampToValueAtTime(42, startTime + 0.08);
+
+      const peak = Math.min(0.16, note.v * 0.16);
+      g.gain.setValueAtTime(peak, startTime);
+      g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.09);
+
+      osc.connect(g);
+      g.connect(this.bgmGain);
+
+      try {
+        osc.start(startTime);
+        osc.stop(startTime + 0.1);
+      } catch {}
+    } else if (this.noiseBuffer) {
+      // Snare / Hi-Hat / Cymbal via filtered white noise
+      const noiseSource = this.ctx.createBufferSource();
+      noiseSource.buffer = this.noiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      const g = this.ctx.createGain();
+
+      const isHiHat = note.n === 42 || note.n === 44 || note.n === 46;
+      const isSnare = note.n === 38 || note.n === 40;
+
+      if (isHiHat) {
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(6500, startTime);
+        const peak = Math.min(0.06, note.v * 0.06);
+        g.gain.setValueAtTime(peak, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.045);
+      } else if (isSnare) {
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1200, startTime);
+        const peak = Math.min(0.12, note.v * 0.12);
+        g.gain.setValueAtTime(peak, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.12);
+      } else {
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2400, startTime);
+        const peak = Math.min(0.08, note.v * 0.08);
+        g.gain.setValueAtTime(peak, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.06);
+      }
+
+      noiseSource.connect(filter);
+      filter.connect(g);
+      g.connect(this.bgmGain);
+
+      try {
+        noiseSource.start(startTime);
+        noiseSource.stop(startTime + 0.15);
+      } catch {}
     }
   }
 

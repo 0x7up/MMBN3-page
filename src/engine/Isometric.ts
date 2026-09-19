@@ -9,7 +9,7 @@ export const ORIGIN_Y = 96; // 96 + (3 + 3) * 16 = 192
 
 export type Direction = 'S' | 'SW' | 'W' | 'NW' | 'N' | 'NE' | 'E' | 'SE';
 
-export const DIRECTIONS: Direction[] = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE'];
+export const DIRECTIONS: Direction[] = ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW'];
 
 export interface Point2D {
   x: number;

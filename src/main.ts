@@ -50,6 +50,9 @@ async function initGame() {
   // Load assets and start game loop
   await renderer.loadAssets();
   renderer.start();
+
+  // Expose on window for testing and diagnostics
+  (window as any).__game = { audio, map, camera, megaman, renderer };
 }
 
 window.addEventListener('DOMContentLoaded', () => {
