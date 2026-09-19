@@ -48,6 +48,27 @@ export function screenToWorld(sx: number, sy: number): GridCoord {
 }
 
 /**
+ * Snaps screen coordinates to the nearest integer isometric grid coordinate
+ */
+export function snapToGrid(sx: number, sy: number): { gx: number; gy: number } {
+  const { gx, gy } = screenToWorld(sx, sy);
+  return {
+    gx: Math.round(gx),
+    gy: Math.round(gy)
+  };
+}
+
+/**
+ * Checks if a screen point lies inside the diamond bounding box of tile (gx, gy)
+ */
+export function isPointInTile(sx: number, sy: number, gx: number, gy: number): boolean {
+  const center = worldToScreen(gx, gy);
+  const dx = Math.abs(sx - center.x);
+  const dy = Math.abs(sy - center.y);
+  return (dx / 32 + dy / 16) <= 1.0;
+}
+
+/**
  * Determines the closest 8-way isometric direction from movement vector (dx, dy)
  * in screen coordinates.
  *

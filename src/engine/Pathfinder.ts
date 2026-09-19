@@ -1,7 +1,10 @@
 // A* Pathfinding for navigating the isometric platforms and bridges
 
 import { Point2D } from './Isometric';
-import { ACDCSquareMap } from '../world/ACDCSquareMap';
+
+export interface WalkableMap {
+  isWalkable(x: number, y: number): boolean;
+}
 
 interface PathNode {
   x: number;
@@ -13,10 +16,14 @@ interface PathNode {
 }
 
 export class Pathfinder {
-  private map: ACDCSquareMap;
+  private map: WalkableMap;
   private readonly stepSize = 12; // grid resolution for smooth pathfinding
 
-  constructor(map: ACDCSquareMap) {
+  constructor(map: WalkableMap) {
+    this.map = map;
+  }
+
+  public setMap(map: WalkableMap): void {
     this.map = map;
   }
 

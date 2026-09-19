@@ -1,10 +1,13 @@
-// MegaMan.EXE actor entity with 8-directional sprite animations and movement controller
-
 import { Direction, DIRECTIONS, Point2D, vectorToDirection } from '../engine/Isometric';
-import { ACDCSquareMap } from '../world/ACDCSquareMap';
 import { AudioManager } from '../audio/AudioManager';
 
-export type MegaManState = 'idle' | 'running' | 'interacting';
+export interface PlayableMap {
+  isWalkable(sx: number, sy: number): boolean;
+  getConveyorForce?(sx: number, sy: number): Point2D | null;
+  isIceAt?(sx: number, sy: number): boolean;
+}
+
+export type MegaManState = 'idle' | 'running' | 'sliding' | 'interacting';
 
 export class MegaMan {
   public x: number;
@@ -14,6 +17,10 @@ export class MegaMan {
 
   // Movement speed in pixels per second
   public readonly speed: number = 135;
+
+  // Ice sliding physics
+  private isSliding: boolean = false;
+  private slideVector: Point2D = { x: 0, y: 0 };
 
   // Sprite animation pacing
   private frameTimer: number = 0;
@@ -29,14 +36,27 @@ export class MegaMan {
   public readonly anchorX: number = 18;
   public readonly anchorY: number = 40;
 
-  private map: ACDCSquareMap;
+  private map: PlayableMap;
   private audio: AudioManager;
 
-  constructor(spawn: Point2D, map: ACDCSquareMap, audio: AudioManager) {
+  constructor(spawn: Point2D, map: PlayableMap, audio: AudioManager) {
     this.x = spawn.x;
     this.y = spawn.y;
     this.map = map;
     this.audio = audio;
+  }
+
+  public setMap(map: PlayableMap): void {
+    this.map = map;
+    this.waypoints = [];
+    this.isSliding = false;
+  }
+
+  public setPosition(x: number, y: number): void {
+    this.x = x;
+    this.y = y;
+    this.waypoints = [];
+    this.isSliding = false;
   }
 
   public setWaypoints(points: Point2D[]): void {
@@ -63,6 +83,7 @@ export class MegaMan {
     let moveX = 0;
     let moveY = 0;
     const hasKeyInput = Math.abs(keyVector.x) > 0.01 || Math.abs(keyVector.y) > 0.01;
+    const onIce = this.map.isIceAt ? this.map.isIceAt(this.x, this.y) : false;
 
     if (hasKeyInput) {
       // Keyboard input overrides any click-to-move waypoints immediately
@@ -70,6 +91,16 @@ export class MegaMan {
       moveX = keyVector.x * this.speed * dt;
       moveY = keyVector.y * this.speed * dt;
       this.direction = vectorToDirection(keyVector.x, keyVector.y);
+      if (onIce) {
+        this.isSliding = true;
+        this.slideVector = { x: keyVector.x, y: keyVector.y };
+      } else {
+        this.isSliding = false;
+      }
+    } else if (this.isSliding && onIce) {
+      // Maintain momentum while gliding over ice
+      moveX = this.slideVector.x * this.speed * dt;
+      moveY = this.slideVector.y * this.speed * dt;
     } else if (this.waypoints.length > 0) {
       // Follow next waypoint
       const nextWp = this.waypoints[0];
@@ -86,6 +117,21 @@ export class MegaMan {
         moveX = (dx / dist) * step;
         moveY = (dy / dist) * step;
         this.direction = vectorToDirection(dx, dy);
+        if (onIce) {
+          this.isSliding = true;
+          this.slideVector = { x: dx / dist, y: dy / dist };
+        }
+      }
+    } else {
+      this.isSliding = false;
+    }
+
+    // Apply conveyor belt directional thrust if on conveyor panel
+    if (this.map.getConveyorForce) {
+      const conv = this.map.getConveyorForce(this.x, this.y);
+      if (conv) {
+        moveX += conv.x * dt;
+        moveY += conv.y * dt;
       }
     }
 
@@ -93,7 +139,7 @@ export class MegaMan {
     const isMoving = Math.abs(moveX) > 0.001 || Math.abs(moveY) > 0.001;
 
     if (isMoving) {
-      this.state = 'running';
+      this.state = (this.isSliding && onIce && !hasKeyInput) ? 'sliding' : 'running';
 
       // Try full movement first
       const newX = this.x + moveX;
@@ -113,9 +159,12 @@ export class MegaMan {
           slid = true;
         }
 
-        if (!slid && this.waypoints.length > 0) {
-          // Blocked on waypoint, drop it to recalculate
-          this.waypoints.shift();
+        if (!slid) {
+          // Stopped against obstacle
+          this.isSliding = false;
+          if (this.waypoints.length > 0) {
+            this.waypoints.shift();
+          }
         }
       }
 
@@ -125,8 +174,8 @@ export class MegaMan {
         this.frameTimer -= this.frameDuration;
         this.currentRunFrame = (this.currentRunFrame + 1) % 6;
 
-        // Play subtle step sound on contacts (frames 0 and 3)
-        if (this.currentRunFrame === 0 || this.currentRunFrame === 3) {
+        // Play subtle step sound on contacts (frames 0 and 3) unless gliding on ice
+        if (!onIce && (this.currentRunFrame === 0 || this.currentRunFrame === 3)) {
           this.audio.playStep();
         }
       }
@@ -134,6 +183,7 @@ export class MegaMan {
       this.state = 'idle';
       this.frameTimer = 0;
       this.currentRunFrame = 0;
+      this.isSliding = false;
     }
   }
 
@@ -149,7 +199,7 @@ export class MegaMan {
     // 2. Determine frame from direction and state
     const dirIndex = DIRECTIONS.indexOf(this.direction);
     const row = dirIndex >= 0 ? dirIndex : 0;
-    const col = this.state === 'running' ? this.currentRunFrame + 1 : 0;
+    const col = (this.state === 'running' || this.state === 'sliding') ? this.currentRunFrame + 1 : 0;
 
     const sx = col * this.frameWidth;
     const sy = row * this.frameHeight;

@@ -321,6 +321,18 @@ export class AudioManager {
     osc.stop(t + 0.065);
   }
 
+  public playSelect(): void {
+    this.playCursor();
+  }
+
+  public playBip(): void {
+    this.playTextBlip();
+  }
+
+  public playDecision(): void {
+    this.playConfirm();
+  }
+
   // Classic MMBN Menu Confirm / Jack-In Chime
   public playConfirm(): void {
     if (!this.ctx || !this.sfxGain || this.isMuted) return;

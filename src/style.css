@@ -494,3 +494,515 @@ dialog.mmbn-dialog::backdrop {
 .bbs-network-status {
   color: var(--color-cyber-teal);
 }
+
+/* ==========================================================================
+   MMBN3 Custom Map Builder & Engine UI Styles
+   ========================================================================== */
+
+/* 1. Top Editor Toolbar */
+.editor-top-bar {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  right: 16px;
+  height: 48px;
+  background: rgba(8, 16, 36, 0.92);
+  border: 2px solid var(--color-cyber-cyan);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 240, 208, 0.2);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+  z-index: 60;
+  backdrop-filter: blur(6px);
+  gap: 12px;
+}
+
+.editor-bar-left, .editor-bar-right, .editor-bar-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Mode Switcher Button */
+.editor-mode-btn {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 8px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.editor-mode-btn.play-mode {
+  background: linear-gradient(90deg, #005040 0%, #008060 100%);
+  border: 2px solid var(--color-cyber-teal);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 176, 144, 0.4);
+}
+
+.editor-mode-btn.play-mode:hover {
+  background: linear-gradient(90deg, #007058 0%, #00a078 100%);
+  border-color: var(--color-cyber-cyan);
+  box-shadow: 0 0 16px rgba(0, 240, 208, 0.6);
+}
+
+.editor-mode-btn.edit-mode {
+  background: linear-gradient(90deg, #904000 0%, #d06800 100%);
+  border: 2px solid var(--color-cyber-yellow);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(248, 144, 32, 0.5);
+}
+
+.editor-mode-btn.edit-mode:hover {
+  background: linear-gradient(90deg, #b05000 0%, #f07800 100%);
+  box-shadow: 0 0 18px rgba(248, 232, 56, 0.7);
+}
+
+.mode-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.editor-mode-btn.edit-mode .mode-indicator {
+  animation: blink 0.8s infinite;
+}
+
+/* Map Selector Dropdown */
+.editor-map-select-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-label {
+  font-size: 9px;
+  color: var(--color-cyber-cyan);
+  letter-spacing: 1px;
+}
+
+.editor-select {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  background: #0d1e3c;
+  color: #ffffff;
+  border: 1px solid var(--color-cyber-teal);
+  padding: 6px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+}
+
+.editor-select:focus, .editor-select:hover {
+  border-color: var(--color-cyber-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 208, 0.3);
+}
+
+/* Tool Buttons Ribbon */
+.tool-btn {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  background: #0b1830;
+  border: 1px solid #1c3660;
+  color: var(--color-text-dim);
+  padding: 6px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.tool-btn:hover {
+  background: #142a50;
+  color: #ffffff;
+  border-color: var(--color-cyber-teal);
+}
+
+.tool-btn.active {
+  background: #004850;
+  border-color: var(--color-cyber-cyan);
+  color: var(--color-cyber-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 208, 0.4);
+}
+
+.tool-btn.icon-only {
+  font-size: 11px;
+  padding: 5px 8px;
+}
+
+.tool-separator {
+  width: 1px;
+  height: 20px;
+  background: #1c3660;
+  margin: 0 2px;
+}
+
+/* Action Buttons */
+.editor-action-btn {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  background: #0c1c38;
+  border: 1px solid var(--color-cyber-teal);
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.editor-action-btn:hover {
+  border-color: var(--color-cyber-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 208, 0.3);
+}
+
+.editor-action-btn.primary {
+  background: linear-gradient(90deg, #008060 0%, #00b080 100%);
+  border-color: var(--color-cyber-cyan);
+}
+
+.editor-action-btn.danger {
+  border-color: #802030;
+  color: #ff9090;
+}
+
+.editor-action-btn.danger:hover {
+  background: #401018;
+  border-color: var(--color-cyber-red);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(232, 56, 72, 0.4);
+}
+
+/* 2. Bottom Palette Drawer */
+.editor-palette-drawer {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(840px, 94vw);
+  background: rgba(8, 16, 36, 0.96);
+  border: 2px solid var(--color-cyber-cyan);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 208, 0.2);
+  border-radius: 5px;
+  z-index: 70;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+.editor-palette-drawer.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(40px);
+  pointer-events: none;
+}
+
+.palette-header {
+  background: linear-gradient(90deg, #081830 0%, #102850 100%);
+  border-bottom: 1px solid rgba(0, 240, 208, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+}
+
+.palette-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-dim);
+  padding: 6px 12px;
+  border-radius: 3px 3px 0 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.tab-btn:hover {
+  color: #ffffff;
+}
+
+.tab-btn.active {
+  background: #0e2040;
+  border-color: var(--color-cyber-cyan);
+  border-bottom-color: transparent;
+  color: var(--color-cyber-cyan);
+}
+
+.palette-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-dim);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.palette-close-btn:hover {
+  color: #ffffff;
+}
+
+.palette-content {
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 10px;
+}
+
+.palette-item {
+  background: #0d1e3c;
+  border: 2px solid #1a3460;
+  border-radius: 4px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 72px;
+  text-align: center;
+}
+
+.palette-item:hover {
+  border-color: var(--color-cyber-teal);
+  background: #142a50;
+  transform: translateY(-2px);
+}
+
+.palette-item.active {
+  border-color: var(--color-cyber-yellow);
+  background: #1c3660;
+  box-shadow: 0 0 10px rgba(248, 232, 56, 0.4);
+}
+
+.palette-item img {
+  max-width: 48px;
+  max-height: 36px;
+  object-fit: contain;
+  margin-bottom: 6px;
+  image-rendering: pixelated;
+}
+
+.palette-item span {
+  font-size: 8px;
+  line-height: 1.2;
+  color: #e0f0ff;
+}
+
+.prefab-preview-box {
+  width: 42px;
+  height: 28px;
+  background: #08142a;
+  border: 1px dashed var(--color-cyber-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--color-cyber-cyan);
+  margin-bottom: 6px;
+}
+
+/* 3. Prop Inspector Modal */
+.editor-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 10, 24, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.editor-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.modal-card {
+  width: min(520px, 92vw);
+  background: linear-gradient(180deg, #0d2242 0%, #081226 100%);
+  border: 3px solid var(--color-cyber-cyan);
+  box-shadow: 0 0 35px rgba(0, 240, 208, 0.4), inset 0 0 15px rgba(0, 240, 208, 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(90deg, #008070 0%, #00b090 100%);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--color-cyber-cyan);
+}
+
+.modal-title {
+  font-size: 11px;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-input, .modal-textarea {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  background: #050d1a;
+  border: 1px solid var(--color-cyber-teal);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 3px;
+  outline: none;
+  width: 100%;
+}
+
+.modal-input:focus, .modal-textarea:focus {
+  border-color: var(--color-cyber-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 208, 0.3);
+}
+
+.modal-readonly-val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-cyber-yellow);
+  padding: 4px 0;
+}
+
+.checkbox-group label {
+  font-size: 9px;
+  color: #e0f0ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.modal-footer {
+  padding: 12px 20px;
+  background: #060e1e;
+  border-top: 1px solid rgba(0, 240, 208, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 4. Overworld NPC Dialogue Box */
+.overworld-dialog-box {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 92vw);
+  z-index: 150;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.overworld-dialog-box.hidden {
+  display: none;
+}
+
+.dialog-frame {
+  background: linear-gradient(180deg, #0c2040 0%, #061022 100%);
+  border: 3px double var(--color-cyber-cyan);
+  box-shadow: 0 0 25px rgba(0, 240, 208, 0.5), inset 0 0 10px rgba(0, 240, 208, 0.2);
+  border-radius: 6px;
+  padding: 16px 20px;
+  position: relative;
+}
+
+.dialog-speaker-name {
+  font-size: 10px;
+  color: var(--color-cyber-yellow);
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  text-shadow: 0 0 6px rgba(248, 232, 56, 0.5);
+}
+
+.dialog-text {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  line-height: 1.6;
+  color: #ffffff;
+  min-height: 54px;
+}
+
+.dialog-prompt {
+  font-size: 8px;
+  color: var(--color-cyber-teal);
+  text-align: right;
+  margin-top: 8px;
+  animation: blink 0.9s infinite;
+}
+
+/* 5. Sleek Cyber Toast Notification */
+.cyber-toast {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #005040 0%, #009070 100%);
+  border: 2px solid var(--color-cyber-cyan);
+  box-shadow: 0 4px 20px rgba(0, 240, 208, 0.5);
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 10px;
+  color: #ffffff;
+  letter-spacing: 1px;
+  z-index: 250;
+  pointer-events: none;
+  animation: toast-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.cyber-toast.fade-out {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-15px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
