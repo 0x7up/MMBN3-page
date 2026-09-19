@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Mega Man Battle Network 3 — ACDC Square</title>
+    <link rel="icon" type="image/png" href="/assets/acdc_floor_tile.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Full-viewport retro game canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Initial Jack-in prompt overlay -->
+    <div id="jack-in-overlay" class="jack-in-overlay">
+      <div class="jack-in-box">
+        <div class="jack-in-logo">TRANSMISSION LINK DETECTED</div>
+        <h1 class="jack-in-title">ACDC SQUARE</h1>
+        <p class="jack-in-subtitle">CYBERWORLD // MEGA MAN BATTLE NETWORK 3</p>
+        <div class="jack-in-action">
+          <span class="jack-in-pulse"></span>
+          CLICK ANYWHERE OR PRESS ANY KEY TO JACK IN
+        </div>
+      </div>
+    </div>
+
+    <!-- Minimalist HUD corners -->
+    <div id="hud-bar" class="hud-bar">
+      <div class="hud-hints">
+        <span class="hud-badge">[WASD / ARROWS] RUN</span>
+        <span class="hud-badge">[CLICK / TAP] PATHFIND</span>
+        <span class="hud-badge">[SPACE / ENTER] BBS</span>
+      </div>
+      <div class="hud-actions">
+        <button id="btn-mute-toggle" class="hud-btn" title="Toggle Sound (M)">🔊 SOUND: ON</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

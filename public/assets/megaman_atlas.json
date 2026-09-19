@@ -1,0 +1,104 @@
+{
+  "frameWidth": 36,
+  "frameHeight": 44,
+  "anchorX": 18,
+  "anchorY": 40,
+  "directions": {
+    "S": {
+      "row": 0,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "SW": {
+      "row": 1,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "W": {
+      "row": 2,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "NW": {
+      "row": 3,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "N": {
+      "row": 4,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "NE": {
+      "row": 5,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "E": {
+      "row": 6,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "SE": {
+      "row": 7,
+      "idleCol": 0,
+      "runCols": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  }
+}
